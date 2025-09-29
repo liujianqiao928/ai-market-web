@@ -140,12 +140,68 @@ const aiApps = [
   }
 ]
 
+// 评论数据
+const comments = [
+  {
+    id: 1,
+    postId: 1,
+    content: '非常详细的分享，GPT-4确实在推理能力上有很大提升！',
+    author: users[2],
+    likes: 23,
+    replies: [
+      {
+        id: 101,
+        content: '同感，特别是在代码生成方面',
+        author: users[0],
+        likes: 5,
+        createdAt: '2024-01-15T11:15:00Z'
+      }
+    ],
+    createdAt: '2024-01-15T11:00:00Z'
+  },
+  {
+    id: 2,
+    postId: 1,
+    content: '请问有具体的使用场景对比吗？',
+    author: users[0],
+    likes: 12,
+    replies: [],
+    createdAt: '2024-01-15T12:30:00Z'
+  },
+  {
+    id: 3,
+    postId: 2,
+    content: 'Midjourney的艺术效果确实更好，但Stable Diffusion的可控性更强',
+    author: users[1],
+    likes: 18,
+    replies: [],
+    createdAt: '2024-01-14T17:00:00Z'
+  },
+  {
+    id: 4,
+    postId: 3,
+    content: '新手友好的教程，收藏了！',
+    author: users[2],
+    likes: 45,
+    replies: [
+      {
+        id: 102,
+        content: '感谢支持！后续会更新更多内容',
+        author: users[0],
+        likes: 8,
+        createdAt: '2024-01-13T10:00:00Z'
+      }
+    ],
+    createdAt: '2024-01-13T09:45:00Z'
+  }
+]
+
 // 论坛帖子数据
 const forumPosts = [
   {
     id: 1,
     title: 'ChatGPT 4.0 使用体验分享',
-    content: '最近体验了ChatGPT 4.0，感觉在逻辑推理和代码生成方面有了显著提升...',
+    content: '最近体验了ChatGPT 4.0，感觉在逻辑推理和代码生成方面有了显著提升。\n\n## 主要改进\n\n1. **逻辑推理能力**：在处理复杂问题时，GPT-4能够更好地理解上下文，给出更准确的答案。\n\n2. **代码生成**：支持更多编程语言，生成的代码质量也有明显提升。\n\n3. **创意写作**：在文学创作、营销文案等方面表现出色。\n\n## 使用建议\n\n- 提供清晰的上下文信息\n- 分步骤描述复杂任务\n- 适当使用示例来说明需求\n\n总的来说，GPT-4是一个非常值得尝试的AI工具！',
     author: users[1],
     category: 'experience',
     tags: ['ChatGPT', '体验分享', 'GPT-4'],
@@ -538,6 +594,63 @@ Mock.mock(/\/api\/forum\/posts\/(\d+)/, 'get', (options) => {
     return {
       code: 404,
       message: '帖子不存在',
+      data: null
+    }
+  }
+})
+
+// 获取帖子评论
+Mock.mock(/\/api\/forum\/posts\/(\d+)\/comments/, 'get', (options) => {
+  const postId = parseInt(options.url.match(/\/api\/forum\/posts\/(\d+)\/comments/)[1])
+  const postComments = comments.filter(c => c.postId === postId)
+  
+  return {
+    code: 200,
+    message: '获取成功',
+    data: postComments
+  }
+})
+
+// 添加评论
+Mock.mock(/\/api\/forum\/posts\/(\d+)\/comments/, 'post', (options) => {
+  const postId = parseInt(options.url.match(/\/api\/forum\/posts\/(\d+)\/comments/)[1])
+  const { content } = JSON.parse(options.body)
+  
+  const newComment = {
+    id: comments.length + 1,
+    postId,
+    content,
+    author: users[0], // 当前登录用户
+    likes: 0,
+    replies: [],
+    createdAt: new Date().toISOString()
+  }
+  
+  comments.push(newComment)
+  
+  return {
+    code: 200,
+    message: '评论成功',
+    data: newComment
+  }
+})
+
+// 点赞评论
+Mock.mock(/\/api\/forum\/comments\/(\d+)\/like/, 'post', (options) => {
+  const commentId = parseInt(options.url.match(/\/api\/forum\/comments\/(\d+)\/like/)[1])
+  const comment = comments.find(c => c.id === commentId)
+  
+  if (comment) {
+    comment.likes += 1
+    return {
+      code: 200,
+      message: '点赞成功',
+      data: { likes: comment.likes }
+    }
+  } else {
+    return {
+      code: 404,
+      message: '评论不存在',
       data: null
     }
   }

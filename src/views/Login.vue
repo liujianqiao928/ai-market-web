@@ -35,11 +35,15 @@
         <div class="form-container">
           <!-- 表单头部 -->
           <div class="form-header">
-            <h2 class="form-title">{{ isLogin ? '登录' : '注册' }}</h2>
-            <p class="form-subtitle">
-              {{ isLogin ? '欢迎回来！请登录您的账户' : '创建新账户，开始您的AI之旅' }}
-            </p>
+            <h2 class="form-title">登录</h2>
+            <p class="form-subtitle">欢迎回来！请登录您的账户</p>
           </div>
+          
+          <!-- 登录方式切换 -->
+          <el-tabs v-model="loginType" class="login-tabs">
+            <el-tab-pane label="邮箱登录" name="email"></el-tab-pane>
+            <el-tab-pane label="手机验证码" name="phone"></el-tab-pane>
+          </el-tabs>
           
           <!-- 登录表单 -->
           <el-form 
@@ -49,67 +53,63 @@
             size="large"
             @submit.prevent="handleSubmit"
           >
-            <!-- 用户名/邮箱 -->
-            <el-form-item prop="username">
-              <el-input
-                v-model="formData.username"
-                :placeholder="isLogin ? '请输入用户名或邮箱' : '请输入用户名'"
-                :prefix-icon="User"
-              />
-            </el-form-item>
-            
-            <!-- 邮箱（仅注册时显示） -->
-            <el-form-item v-if="!isLogin" prop="email">
-              <el-input
-                v-model="formData.email"
-                placeholder="请输入邮箱地址"
-                :prefix-icon="Message"
-              />
-            </el-form-item>
-            
-            <!-- 密码 -->
-            <el-form-item prop="password">
-              <el-input
-                v-model="formData.password"
-                type="password"
-                placeholder="请输入密码"
-                :prefix-icon="Lock"
-                show-password
-              />
-            </el-form-item>
-            
-            <!-- 确认密码（仅注册时显示） -->
-            <el-form-item v-if="!isLogin" prop="confirmPassword">
-              <el-input
-                v-model="formData.confirmPassword"
-                type="password"
-                placeholder="请确认密码"
-                :prefix-icon="Lock"
-                show-password
-              />
-            </el-form-item>
-            
-            <!-- 记住我/忘记密码 -->
-            <div v-if="isLogin" class="form-options">
-              <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-              <el-button type="primary" text @click="handleForgotPassword">
-                忘记密码？
-              </el-button>
-            </div>
-            
-            <!-- 用户协议（仅注册时显示） -->
-            <div v-if="!isLogin" class="form-options">
-              <el-checkbox v-model="agreeTerms" required>
-                我已阅读并同意
-                <el-button type="primary" text @click="handleShowTerms">
-                  用户协议
+            <!-- 邮箱登录 -->
+            <template v-if="loginType === 'email'">
+              <el-form-item prop="email">
+                <el-input
+                  v-model="formData.email"
+                  placeholder="请输入邮箱地址"
+                  :prefix-icon="Message"
+                />
+              </el-form-item>
+              
+              <el-form-item prop="password">
+                <el-input
+                  v-model="formData.password"
+                  type="password"
+                  placeholder="请输入密码"
+                  :prefix-icon="Lock"
+                  show-password
+                />
+              </el-form-item>
+              
+              <div class="form-options">
+                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                <el-button type="primary" text @click="handleForgotPassword">
+                  忘记密码？
                 </el-button>
-                和
-                <el-button type="primary" text @click="handleShowPrivacy">
-                  隐私政策
-                </el-button>
-              </el-checkbox>
-            </div>
+              </div>
+            </template>
+            
+            <!-- 手机验证码登录 -->
+            <template v-if="loginType === 'phone'">
+              <el-form-item prop="phone">
+                <el-input
+                  v-model="formData.phone"
+                  placeholder="请输入手机号"
+                  :prefix-icon="Phone"
+                />
+              </el-form-item>
+              
+              <el-form-item prop="verifyCode">
+                <div class="verify-code-input">
+                  <el-input
+                    v-model="formData.verifyCode"
+                    placeholder="请输入验证码"
+                    :prefix-icon="Message"
+                    style="flex: 1;"
+                  />
+                  <el-button
+                    type="primary"
+                    :disabled="countdown > 0 || !formData.phone"
+                    @click="sendVerifyCode"
+                    class="send-code-btn"
+                  >
+                    {{ countdown > 0 ? `${countdown}s后重发` : '发送验证码' }}
+                  </el-button>
+                </div>
+              </el-form-item>
+            </template>
             
             <!-- 提交按钮 -->
             <el-form-item>
@@ -119,7 +119,7 @@
                 :loading="loading"
                 class="submit-btn"
               >
-                {{ isLogin ? '登录' : '注册' }}
+                登录
               </el-button>
             </el-form-item>
           </el-form>
@@ -147,7 +147,7 @@
             <span class="footer-text">
               {{ isLogin ? '还没有账户？' : '已有账户？' }}
             </span>
-            <el-button type="primary" text @click="toggleMode">
+            <el-button type="primary" text @click="isLogin ? goToRegister() : toggleMode()">
               {{ isLogin ? '立即注册' : '立即登录' }}
             </el-button>
           </div>
@@ -158,11 +158,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Message, Check, Platform, ChromeFilled } from '@element-plus/icons-vue'
+import { User, Lock, Message, Phone, Check, Platform, ChromeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -173,6 +173,9 @@ const formRef = ref()
 const loading = ref(false)
 const rememberMe = ref(false)
 const agreeTerms = ref(false)
+const loginType = ref('email')
+const countdown = ref(0)
+const countdownTimer = ref(null)
 
 // 表单模式
 const isLogin = ref(true)
@@ -182,7 +185,9 @@ const formData = reactive({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  phone: '',
+  verifyCode: ''
 })
 
 // 表单验证规则
@@ -195,6 +200,22 @@ const formRules = computed(() => {
     password: [
       { required: true, message: '请输入密码', trigger: 'blur' },
       { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+    ]
+  }
+  
+  if (loginType.value === 'email') {
+    rules.email = [
+      { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+      { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+    ]
+  } else if (loginType.value === 'phone') {
+    rules.phone = [
+      { required: true, message: '请输入手机号', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+    ]
+    rules.verifyCode = [
+      { required: true, message: '请输入验证码', trigger: 'blur' },
+      { pattern: /^\d{6}$/, message: '验证码为6位数字', trigger: 'blur' }
     ]
   }
   
@@ -233,6 +254,8 @@ const resetForm = () => {
   formData.email = ''
   formData.password = ''
   formData.confirmPassword = ''
+  formData.phone = ''
+  formData.verifyCode = ''
   agreeTerms.value = false
   formRef.value?.clearValidate()
 }
@@ -243,40 +266,30 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     
-    if (!isLogin.value && !agreeTerms.value) {
-      ElMessage.warning('请先同意用户协议和隐私政策')
-      return
-    }
-    
     loading.value = true
     
-    if (isLogin.value) {
-      // 登录逻辑
+    if (loginType.value === 'email') {
+      // 邮箱密码登录
       await userStore.login({
-        username: formData.username,
+        email: formData.email,
         password: formData.password,
         rememberMe: rememberMe.value
       })
-      
-      ElMessage.success('登录成功！')
-      
-      // 跳转到首页或之前的页面
-      const redirect = route.query.redirect || '/'
-      router.push(redirect)
-    } else {
-      // 注册逻辑
-      await userStore.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
+    } else if (loginType.value === 'phone') {
+      // 手机验证码登录
+      await userStore.loginByPhone({
+        phone: formData.phone,
+        verifyCode: formData.verifyCode
       })
-      
-      ElMessage.success('注册成功！请登录')
-      isLogin.value = true
-      resetForm()
     }
+    
+    ElMessage.success('登录成功')
+    
+    // 跳转到首页或之前的页面
+    const redirect = route.query.redirect || '/'
+    router.push(redirect)
   } catch (error) {
-    ElMessage.error(error.message || (isLogin.value ? '登录失败，请检查用户名和密码' : '注册失败，请稍后重试'))
+    ElMessage.error(error.message || '登录失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -298,11 +311,45 @@ const handleSocialLogin = (provider) => {
   ElMessage.info(`${provider} 登录功能开发中...`)
 }
 
+const sendVerifyCode = async () => {
+  if (!formData.phone) {
+    ElMessage.warning('请先输入手机号')
+    return
+  }
+  
+  try {
+    // 这里应该调用发送验证码的API
+    ElMessage.success('验证码已发送')
+    
+    // 开始倒计时
+    countdown.value = 60
+    countdownTimer.value = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(countdownTimer.value)
+        countdownTimer.value = null
+      }
+    }, 1000)
+  } catch (error) {
+    ElMessage.error('发送验证码失败，请稍后重试')
+  }
+}
+
+const goToRegister = () => {
+  router.push('/register')
+}
+
 // 生命周期
 onMounted(() => {
   // 检查URL参数，确定是登录还是注册模式
   if (route.query.type === 'register') {
     isLogin.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (countdownTimer.value) {
+    clearInterval(countdownTimer.value)
   }
 })
 </script>
@@ -403,12 +450,40 @@ onMounted(() => {
   margin: 0;
 }
 
+.login-tabs {
+  margin-bottom: 24px;
+}
+
+.login-tabs :deep(.el-tabs__header) {
+  margin: 0 0 20px 0;
+}
+
+.login-tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+}
+
+.login-tabs :deep(.el-tabs__item) {
+  font-size: 16px;
+  font-weight: 500;
+}
+
 .form-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
   font-size: 14px;
+}
+
+.verify-code-input {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.send-code-btn {
+  min-width: 120px;
+  white-space: nowrap;
 }
 
 .submit-btn {

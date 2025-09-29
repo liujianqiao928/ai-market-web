@@ -451,7 +451,7 @@ const handleSubmitPaper = () => {
 }
 
 const handlePaperClick = (paper) => {
-  router.push(`/papers/${paper.id}`)
+  router.push(`/papers/detail/${paper.id}`)
 }
 
 const handlePaperDownload = (paper) => {
@@ -527,6 +527,26 @@ onMounted(() => {
 .filter-controls {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.filter-controls .el-select {
+  min-width: 140px;
+  width: auto;
+}
+
+.filter-controls .el-select .el-select__wrapper {
+  min-width: 140px;
+}
+
+.filter-controls .el-select .el-select__selection {
+  overflow: visible;
+}
+
+.filter-controls .el-select .el-select__selected-item {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .papers-content {
@@ -710,6 +730,12 @@ onMounted(() => {
     flex-wrap: wrap;
   }
   
+  .filter-controls .el-select {
+    min-width: 120px;
+    flex: 1;
+    max-width: 200px;
+  }
+  
   .papers-content {
     grid-template-columns: 1fr;
     padding: 16px;
@@ -732,6 +758,12 @@ onMounted(() => {
   .filter-controls {
     flex-direction: column;
     width: 100%;
+    gap: 16px;
+  }
+  
+  .filter-controls .el-select {
+    width: 100%;
+    min-width: unset;
   }
 }
 </style>

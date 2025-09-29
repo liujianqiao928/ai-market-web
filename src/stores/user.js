@@ -67,6 +67,34 @@ export const useUserStore = defineStore('user', () => {
     }
   }
   
+  // 手机验证码登录
+  const loginByPhone = async (credentials) => {
+    isLoading.value = true
+    
+    try {
+      const response = await axios.post('/api/auth/login-by-phone', credentials)
+      
+      if (response.data.code === 200) {
+        const { token: newToken, user: userData } = response.data.data
+        
+        setToken(newToken)
+        setUser(userData)
+        
+        ElMessage.success('登录成功')
+        return { success: true, data: response.data.data }
+      } else {
+        ElMessage.error(response.data.message || '登录失败')
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      console.error('手机登录错误:', error)
+      ElMessage.error('网络错误，请稍后重试')
+      return { success: false, message: '网络错误' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
   // 注册
   const register = async (userData) => {
     isLoading.value = true
@@ -214,6 +242,7 @@ export const useUserStore = defineStore('user', () => {
     
     // 方法
     login,
+    loginByPhone,
     register,
     logout,
     fetchUserProfile,

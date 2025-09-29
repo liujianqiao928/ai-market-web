@@ -10,6 +10,12 @@ const routes = [
     meta: { title: '登录', hideInMenu: true }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: { title: '注册', hideInMenu: true }
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/featured',
@@ -56,7 +62,7 @@ const routes = [
             path: 'create',
             name: 'CreatePost',
             component: () => import('@/views/CreatePost.vue'),
-            meta: { title: '发布帖子', requiresAuth: true, hideInMenu: true }
+            meta: { title: '发布帖子', requiresAuth: false, hideInMenu: true }
           }
         ]
       },
@@ -109,8 +115,8 @@ router.beforeEach((to, from, next) => {
     }
   }
   
-  // 如果已登录用户访问登录页，重定向到首页
-  if (to.name === 'Login' && localStorage.getItem('token')) {
+  // 如果已登录用户访问登录页或注册页，重定向到首页
+  if ((to.name === 'Login' || to.name === 'Register') && localStorage.getItem('token')) {
     next('/')
     return
   }

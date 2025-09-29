@@ -1,24 +1,29 @@
 <template>
   <div class="forum-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="page-title">技术论坛</h1>
-          <p class="page-subtitle">与AI开发者交流经验，分享技术见解</p>
-        </div>
-        
-        <div class="header-actions">
-          <el-button type="primary" size="large" @click="handleCreatePost">
-            <el-icon><EditPen /></el-icon>
-            发布帖子
-          </el-button>
+    <!-- 子路由视图 -->
+    <router-view v-if="$route.name !== 'Forum'" />
+    
+    <!-- 论坛主页面内容 -->
+    <template v-else>
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <div class="header-content">
+          <div class="header-left">
+            <h1 class="page-title">技术论坛</h1>
+            <p class="page-subtitle">与AI开发者交流经验，分享技术见解</p>
+          </div>
+          
+          <div class="header-actions">
+            <el-button type="primary" size="large" @click="handleCreatePost">
+              <el-icon><EditPen /></el-icon>
+              发布帖子
+            </el-button>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <!-- 论坛导航 -->
-    <div class="forum-nav">
+      
+      <!-- 论坛导航 -->
+      <div class="forum-nav">
       <div class="nav-content">
         <div class="nav-tabs">
           <el-button
@@ -188,6 +193,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -427,14 +433,6 @@ const handleCurrentChange = (page) => {
 }
 
 const handleCreatePost = () => {
-  // 检查登录状态
-  const token = localStorage.getItem('token')
-  if (!token) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-  
   router.push('/forum/create')
 }
 
@@ -525,6 +523,29 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.nav-filters .el-select {
+  min-width: 120px;
+  width: auto;
+}
+
+.nav-filters .el-select .el-input__wrapper {
+  min-width: 120px;
+}
+
+.nav-filters .el-select .el-select__wrapper {
+  min-width: 120px;
+}
+
+.nav-filters .el-select .el-select__selection {
+  overflow: visible;
+}
+
+.nav-filters .el-select .el-select__selected-item {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .forum-content {

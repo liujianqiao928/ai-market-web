@@ -168,12 +168,7 @@ const handleMenuSelect = (index) => {
 }
 
 const handlePublish = () => {
-  if (!isLoggedIn.value) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-  ElMessage.info('发布功能开发中...')
+  router.push('/forum/create')
 }
 
 const handleNotifications = () => {

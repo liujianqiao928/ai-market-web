@@ -389,12 +389,29 @@ watch(() => router.currentRoute.value.query, (newQuery) => {
 
 .filter-controls .el-select {
   border-radius: 20px;
+  min-width: 140px;
+  width: auto;
 }
 
 .filter-controls .el-select .el-input__wrapper {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
+  min-width: 140px;
+}
+
+.filter-controls .el-select .el-select__wrapper {
+  min-width: 140px;
+}
+
+.filter-controls .el-select .el-select__selection {
+  overflow: visible;
+}
+
+.filter-controls .el-select .el-select__selected-item {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .category-nav {

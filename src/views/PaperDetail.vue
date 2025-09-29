@@ -1,19 +1,23 @@
 <template>
-  <div class="paper-detail-page">
-    <div class="page-header">
-      <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/papers' }">学术论文</el-breadcrumb-item>
-        <el-breadcrumb-item>论文详情</el-breadcrumb-item>
-      </el-breadcrumb>
-    </div>
+  <div class="paper-detail">
+    <!-- 面包屑导航 -->
+    <el-breadcrumb class="breadcrumb" separator=">">
+      <el-breadcrumb-item :to="{ path: '/papers' }">学术论文</el-breadcrumb-item>
+      <el-breadcrumb-item>论文详情</el-breadcrumb-item>
+    </el-breadcrumb>
 
+    <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
       <el-skeleton :rows="8" animated />
     </div>
 
+    <!-- 论文详情 -->
     <div v-else-if="paper" class="paper-content">
+      <!-- 论文头部信息 -->
       <div class="paper-header">
         <h1 class="paper-title">{{ paper.title }}</h1>
+        
+        <!-- 论文元信息 -->
         <div class="paper-meta">
           <div class="authors">
             <el-icon><User /></el-icon>
@@ -21,43 +25,42 @@
           </div>
           <div class="publication">
             <el-icon><Document /></el-icon>
-            <span>{{ paper.journal }} • {{ paper.year }}</span>
+            <span>{{ paper.journal }} · {{ paper.year }}</span>
           </div>
           <div class="date">
             <el-icon><Calendar /></el-icon>
-            <span>发布于 {{ formatDate(paper.publishedAt) }}</span>
+            <span>发表于 {{ formatDate(paper.publishedAt) }}</span>
           </div>
         </div>
-        
-        <div class="paper-tags">
-          <el-tag
-            v-for="tag in paper.tags"
-            :key="tag"
-            class="paper-tag"
-          >
+
+        <!-- 标签 -->
+        <div class="tags">
+          <el-tag v-for="tag in paper.tags" :key="tag" type="primary" size="small">
             {{ tag }}
           </el-tag>
         </div>
-        
-        <div class="paper-stats">
+
+        <!-- 统计信息 -->
+        <div class="stats">
           <div class="stat-item">
             <el-icon><View /></el-icon>
-            <span>{{ paper.views }} 次查看</span>
+            <span>{{ paper.views.toLocaleString() }} 浏览</span>
           </div>
           <div class="stat-item">
             <el-icon><Download /></el-icon>
-            <span>{{ paper.downloads }} 次下载</span>
+            <span>{{ paper.downloads.toLocaleString() }} 下载</span>
           </div>
           <div class="stat-item">
             <el-icon><Star /></el-icon>
-            <span>{{ paper.citations }} 次引用</span>
+            <span>{{ paper.citations.toLocaleString() }} 引用</span>
           </div>
         </div>
-        
-        <div class="paper-actions">
+
+        <!-- 操作按钮 -->
+        <div class="actions">
           <el-button type="primary" @click="handleDownload">
             <el-icon><Download /></el-icon>
-            下载PDF
+            下载论文
           </el-button>
           <el-button @click="handleCite">
             <el-icon><Document /></el-icon>
@@ -65,12 +68,107 @@
           </el-button>
           <el-button @click="handleBookmark">
             <el-icon><Star /></el-icon>
-            {{ isBookmarked ? '取消收藏' : '收藏' }}
+            {{ isBookmarked ? '已收藏' : '收藏' }}
           </el-button>
           <el-button @click="handleShare">
             <el-icon><Share /></el-icon>
             分享
           </el-button>
+        </div>
+      </div>
+
+      <!-- 主要内容区域 - 左右分栏布局 -->
+      <div class="main-content">
+        <!-- 左侧：论文原文 -->
+        <div class="content-left">
+          <div class="paper-original">
+            <div class="original-header">
+              <h2>论文原文</h2>
+              <div class="zoom-controls">
+                <el-button size="small" @click="zoomOut">
+                  <el-icon><ZoomOut /></el-icon>
+                </el-button>
+                <span class="zoom-level">{{ zoomLevel }}%</span>
+                <el-button size="small" @click="zoomIn">
+                  <el-icon><ZoomIn /></el-icon>
+                </el-button>
+                <el-button size="small" @click="resetZoom">
+                  <el-icon><Refresh /></el-icon>
+                </el-button>
+              </div>
+            </div>
+            <div class="original-content" :style="{ fontSize: zoomLevel + '%' }">
+              <div 
+                v-for="section in paper.fullContent" 
+                :key="section.id" 
+                class="content-section"
+              >
+                <h3>{{ section.title }}</h3>
+                <div class="section-content" v-html="section.content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：标签页内容 -->
+        <div class="content-right">
+          <div class="tabs-container">
+            <el-tabs v-model="activeTab" class="paper-tabs">
+              <!-- 论文总结 -->
+              <el-tab-pane label="论文总结" name="summary">
+                <div class="summary-content">
+                  <div class="summary-section">
+                    <h3>主要贡献</h3>
+                    <ul>
+                      <li v-for="contribution in paper.summary.contributions" :key="contribution">
+                        {{ contribution }}
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="summary-section">
+                    <h3>研究方法</h3>
+                    <p>{{ paper.summary.methodology }}</p>
+                  </div>
+                  <div class="summary-section">
+                    <h3>实验结果</h3>
+                    <p>{{ paper.summary.results }}</p>
+                  </div>
+                  <div class="summary-section">
+                    <h3>结论</h3>
+                    <p>{{ paper.summary.conclusion }}</p>
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 原文翻译 -->
+              <el-tab-pane label="原文翻译" name="translation">
+                <div class="translation-content">
+                  <div 
+                    v-for="section in paper.translation" 
+                    :key="section.id" 
+                    class="translation-section"
+                  >
+                    <h3>{{ section.title }}</h3>
+                    <p>{{ section.content }}</p>
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 思维导图 -->
+              <el-tab-pane label="思维导图" name="mindmap">
+                <div class="mindmap-content">
+                  <div class="mindmap-controls">
+                    <el-button size="small" @click="expandAll">展开全部</el-button>
+                    <el-button size="small" @click="collapseAll">收起全部</el-button>
+                    <el-button size="small" @click="centerMindmap">居中显示</el-button>
+                  </div>
+                  <div class="mindmap-container" ref="mindmapContainer">
+                    <div v-html="renderSimpleMindmap()"></div>
+                  </div>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
         </div>
       </div>
 
@@ -249,11 +347,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   User, Document, Calendar, View, Download, Star, Share,
-  InfoFilled
+  InfoFilled, ZoomIn, ZoomOut, Refresh
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -266,6 +364,9 @@ const relatedPapers = ref([])
 const isBookmarked = ref(false)
 const citeDialogVisible = ref(false)
 const citationFormat = ref('apa')
+const activeTab = ref('summary')
+const zoomLevel = ref(14)
+let mindmapInstance = null
 
 const formatDate = (dateString) => {
   if (!dateString) return '未知'
@@ -340,6 +441,121 @@ const copyCitation = () => {
   ElMessage.success('引用格式已复制到剪贴板')
 }
 
+// 缩放控制
+const zoomIn = () => {
+  if (zoomLevel.value < 24) {
+    zoomLevel.value += 2
+  }
+}
+
+const zoomOut = () => {
+  if (zoomLevel.value > 10) {
+    zoomLevel.value -= 2
+  }
+}
+
+const resetZoom = () => {
+  zoomLevel.value = 14
+}
+
+// 思维导图控制
+const expandAll = () => {
+  ElMessage.info('展开全部节点')
+}
+
+const collapseAll = () => {
+  ElMessage.info('收起全部节点')
+}
+
+const centerMindmap = () => {
+  ElMessage.info('居中显示思维导图')
+}
+
+// 初始化思维导图
+const initMindmap = () => {
+  nextTick(() => {
+    const container = document.getElementById('mindmap')
+    if (container && paper.value) {
+      // 创建简单的思维导图结构
+      const mindmapData = {
+        name: paper.value.title,
+        children: [
+          {
+            name: '研究背景',
+            children: [
+              { name: '问题定义' },
+              { name: '现有方法局限' },
+              { name: '研究动机' }
+            ]
+          },
+          {
+            name: '核心贡献',
+            children: paper.value.summary?.contributions?.map(c => ({ name: c })) || []
+          },
+          {
+            name: '方法论',
+            children: [
+              { name: '模型架构' },
+              { name: '训练策略' },
+              { name: '优化方法' }
+            ]
+          },
+          {
+            name: '实验验证',
+            children: [
+              { name: '数据集' },
+              { name: '评估指标' },
+              { name: '对比实验' }
+            ]
+          },
+          {
+            name: '结论与展望',
+            children: [
+              { name: '主要发现' },
+              { name: '应用价值' },
+              { name: '未来工作' }
+            ]
+          }
+        ]
+      }
+      
+      // 渲染简单的思维导图
+      renderSimpleMindmap(container, mindmapData)
+    }
+  })
+}
+
+// 渲染简单思维导图
+const renderSimpleMindmap = (container, data) => {
+  container.innerHTML = ''
+  
+  const mindmapHtml = `
+    <div class="mindmap-node root-node">
+      <div class="node-content">${data.name}</div>
+      <div class="children-container">
+        ${data.children.map(child => `
+          <div class="mindmap-branch">
+            <div class="mindmap-node branch-node">
+              <div class="node-content">${child.name}</div>
+              ${child.children ? `
+                <div class="sub-children">
+                  ${child.children.map(subChild => `
+                    <div class="mindmap-node leaf-node">
+                      <div class="node-content">${subChild.name}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `
+  
+  container.innerHTML = mindmapHtml
+}
+
 const fetchPaperDetail = async () => {
   try {
     loading.value = true
@@ -361,35 +577,57 @@ const fetchPaperDetail = async () => {
       views: 15420,
       downloads: 3240,
       citations: 89567,
-      todayDownloads: 45,
-      weekDownloads: 312,
-      monthDownloads: 1456,
-      doi: '10.48550/arXiv.1706.03762',
-      issn: '1049-5258',
-      pages: '11',
-      language: '英文',
-      fileSize: '2.3 MB',
-      sections: [
+      // 论文原文内容
+      fullContent: [
         {
-          id: 'introduction',
-          title: '引言',
-          preview: '循环神经网络，特别是长短期记忆网络（LSTM）和门控循环单元（GRU），已经被确立为序列建模和转换问题的最先进方法...'
+          id: 'abstract',
+          title: 'Abstract',
+          content: `<p>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.</p>
+          <p>Experiments on two machine translation tasks show that these models are superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU.</p>`
         },
         {
-          id: 'background',
-          title: '背景',
-          preview: '减少序列计算的目标也构成了扩展神经GPU、ByteNet和ConvS2S的基础，它们都使用卷积神经网络作为基本构建块...'
+          id: 'introduction',
+          title: '1. Introduction',
+          content: `<p>Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation.</p>
+          <p>Numerous efforts have since continued to push the boundaries of recurrent language models and encoder-decoder architectures. Recurrent models typically factor computation along the symbol positions of the input and output sequences.</p>
+          <p>Aligning the positions to steps in computation time, they generate a sequence of hidden states ht, as a function of the previous hidden state ht−1 and the input for position t. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples.</p>`
         },
         {
           id: 'model-architecture',
-          title: '模型架构',
-          preview: 'Transformer遵循这种整体架构，使用堆叠的自注意力和逐点、完全连接的层用于编码器和解码器...'
+          title: '3. Model Architecture',
+          content: `<p>Most competitive neural sequence transduction models have an encoder-decoder structure. Here, the encoder maps an input sequence of symbol representations (x1, ..., xn) to a sequence of continuous representations z = (z1, ..., zn). Given z, the decoder then generates an output sequence (y1, ..., ym) of symbols one element at a time.</p>
+          <p>At each step the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next. The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure 1, respectively.</p>`
         }
       ],
-      references: [
-        'Bahdanau, D., Cho, K., & Bengio, Y. (2014). Neural machine translation by jointly learning to align and translate.',
-        'Sutskever, I., Vinyals, O., & Le, Q. V. (2014). Sequence to sequence learning with neural networks.',
-        'Cho, K., Van Merriënboer, B., Gulcehre, C., Bahdanau, D., Bougares, F., Schwenk, H., & Bengio, Y. (2014). Learning phrase representations using RNN encoder-decoder for statistical machine translation.'
+      // 论文总结
+      summary: {
+        contributions: [
+          '提出了完全基于注意力机制的Transformer架构',
+          '摒弃了传统的循环和卷积结构，实现更好的并行化',
+          '在机器翻译任务上达到了当时最佳性能',
+          '为后续的BERT、GPT等模型奠定了基础'
+        ],
+        methodology: 'Transformer采用编码器-解码器架构，完全基于自注意力机制。编码器由6个相同的层组成，每层包含多头自注意力机制和位置前馈网络。解码器同样由6个层组成，但增加了编码器-解码器注意力层。模型使用位置编码来处理序列信息，并采用残差连接和层归一化。',
+        results: '在WMT 2014英德翻译任务上达到28.4 BLEU分数，比之前最佳结果提升超过2个BLEU点。在英法翻译任务上达到41.8 BLEU分数，创造新的单模型最佳记录。训练时间显著减少，仅需3.5天即可达到最佳性能。',
+        conclusion: 'Transformer证明了纯注意力机制在序列转换任务中的有效性，为自然语言处理领域带来了革命性变化。该架构的并行化能力和优异性能使其成为后续大型语言模型的基础，深刻影响了整个NLP领域的发展方向。'
+      },
+      // 中文翻译
+      translation: [
+        {
+          id: 'abstract-zh',
+          title: '摘要',
+          content: '主流的序列转换模型基于复杂的循环或卷积神经网络，包括编码器和解码器。性能最佳的模型还通过注意力机制连接编码器和解码器。我们提出了一种新的简单网络架构——Transformer，完全基于注意力机制，完全摒弃了循环和卷积。在两个机器翻译任务上的实验表明，这些模型在质量上更优越，同时具有更好的并行性，训练时间显著减少。我们的模型在WMT 2014英德翻译任务上达到28.4 BLEU，比现有最佳结果（包括集成模型）提高了2个BLEU以上。'
+        },
+        {
+          id: 'introduction-zh',
+          title: '1. 引言',
+          content: '循环神经网络，特别是长短期记忆网络和门控循环神经网络，已经被确立为序列建模和转换问题（如语言建模和机器翻译）的最先进方法。众多努力持续推动循环语言模型和编码器-解码器架构的边界。循环模型通常沿着输入和输出序列的符号位置进行计算分解。将位置与计算时间步骤对齐，它们生成隐藏状态序列ht，作为前一个隐藏状态ht-1和位置t输入的函数。这种固有的顺序性质阻碍了训练样本内的并行化，这在较长序列长度时变得至关重要，因为内存约束限制了样本间的批处理。'
+        },
+        {
+          id: 'model-architecture-zh',
+          title: '3. 模型架构',
+          content: '大多数竞争性神经序列转换模型都具有编码器-解码器结构。在这里，编码器将符号表示的输入序列(x1, ..., xn)映射到连续表示序列z = (z1, ..., zn)。给定z，解码器然后一次生成一个元素的输出序列(y1, ..., ym)。在每个步骤中，模型都是自回归的，在生成下一个符号时将先前生成的符号作为附加输入。Transformer遵循这种整体架构，对编码器和解码器都使用堆叠的自注意力和逐点全连接层，分别如图1的左半部分和右半部分所示。'
+        }
       ]
     }
     
@@ -422,40 +660,57 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.paper-detail-page {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+.paper-detail {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
-.page-header {
-  margin-bottom: 24px;
+.breadcrumb {
+  margin-bottom: 20px;
+  color: white;
+}
+
+.breadcrumb :deep(.el-breadcrumb__inner) {
+  color: white;
+}
+
+.breadcrumb :deep(.el-breadcrumb__separator) {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .loading-container {
-  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.paper-content {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .paper-header {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-bottom: 1px solid #e0e6ed;
 }
 
 .paper-title {
   font-size: 28px;
   font-weight: 700;
-  line-height: 1.3;
-  color: #1f2937;
-  margin: 0 0 20px 0;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  line-height: 1.4;
 }
 
 .paper-meta {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 20px;
   margin-bottom: 20px;
 }
 
@@ -463,57 +718,299 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6b7280;
+  color: #5a6c7d;
   font-size: 14px;
 }
 
-.paper-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.paper-meta .el-icon {
+  color: #667eea;
+}
+
+.tags {
   margin-bottom: 20px;
 }
 
-.paper-tag {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+.tags .el-tag {
+  margin-right: 8px;
+  margin-bottom: 8px;
 }
 
-.paper-stats {
+.stats {
   display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 16px 0;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6b7280;
+  color: #5a6c7d;
   font-size: 14px;
 }
 
-.paper-actions {
+.stat-item .el-icon {
+  color: #667eea;
+}
+
+.actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.main-content {
+  display: flex;
+  height: calc(100vh - 350px);
+  min-height: 600px;
+}
+
+.content-left {
+  flex: 1;
+  border-right: 1px solid #e0e6ed;
+  display: flex;
+  flex-direction: column;
+}
+
+.paper-original {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.original-header {
+  padding: 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e0e6ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.original-header h2 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-level {
+  font-size: 14px;
+  color: #5a6c7d;
+  min-width: 40px;
+  text-align: center;
+}
+
+.original-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: white;
+}
+
+.content-section {
+  margin-bottom: 30px;
+}
+
+.content-section h3 {
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #667eea;
+}
+
+.section-content {
+  line-height: 1.8;
+  color: #4a5568;
+  font-size: 16px;
+}
+
+.section-content p {
+  margin-bottom: 15px;
+}
+
+.content-right {
+  width: 400px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.paper-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.paper-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.summary-content,
+.translation-content,
+.mindmap-content {
+  padding: 20px;
+  height: 100%;
+}
+
+.summary-section {
+  margin-bottom: 25px;
+}
+
+.summary-section h3 {
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-left: 12px;
+  border-left: 3px solid #667eea;
+}
+
+.summary-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.summary-section li {
+  padding: 8px 0;
+  color: #4a5568;
+  line-height: 1.6;
+  position: relative;
+  padding-left: 20px;
+}
+
+.summary-section li::before {
+  content: '•';
+  color: #667eea;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.summary-section p {
+  color: #4a5568;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.translation-section {
+  margin-bottom: 25px;
+}
+
+.translation-section h3 {
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-left: 12px;
+  border-left: 3px solid #667eea;
+}
+
+.translation-section p {
+  color: #4a5568;
+  line-height: 1.7;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin: 0;
+}
+
+.mindmap-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mindmap-controls {
+  padding: 15px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+
+.mindmap-container {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  overflow: auto;
+}
+
+/* 思维导图样式 */
+.mindmap-container :deep(.mindmap-root) {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mindmap-container :deep(.mindmap-node) {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 5px;
+  border-radius: 20px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.mindmap-container :deep(.mindmap-branch) {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.mindmap-container :deep(.mindmap-branch-node) {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 3px;
+  border-radius: 15px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+  font-weight: 500;
+}
+
+.mindmap-container :deep(.mindmap-leaf) {
+  margin: 5px 0;
+  padding-left: 40px;
+}
+
+.mindmap-container :deep(.mindmap-leaf-node) {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 2px;
+  border-radius: 10px;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #e1bee7;
+  font-size: 14px;
 }
 
 .paper-body {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 24px;
-}
-
-.main-content {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .section {
@@ -603,27 +1100,6 @@ onMounted(() => {
 
 .preview-content {
   padding: 20px;
-}
-
-.content-section {
-  margin-bottom: 24px;
-}
-
-.content-section:last-child {
-  margin-bottom: 0;
-}
-
-.content-section h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 12px 0;
-}
-
-.content-section p {
-  color: #6b7280;
-  line-height: 1.6;
-  margin: 0;
 }
 
 .references {
@@ -781,9 +1257,26 @@ onMounted(() => {
   gap: 12px;
 }
 
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .main-content {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .content-left {
+    border-right: none;
+    border-bottom: 1px solid #e0e6ed;
+  }
+  
+  .content-right {
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
-  .paper-detail-page {
-    padding: 16px;
+  .paper-detail {
+    padding: 10px;
   }
   
   .paper-header {
@@ -791,32 +1284,26 @@ onMounted(() => {
   }
   
   .paper-title {
-    font-size: 22px;
+    font-size: 24px;
   }
   
   .paper-meta {
-    gap: 12px;
-  }
-  
-  .paper-stats {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
   
-  .paper-actions {
-    flex-direction: column;
+  .original-content {
+    padding: 15px;
   }
   
-  .paper-actions .el-button {
-    width: 100%;
+  .summary-content,
+  .translation-content,
+  .mindmap-content {
+    padding: 15px;
   }
   
   .paper-body {
     grid-template-columns: 1fr;
-  }
-  
-  .main-content {
-    padding: 20px;
   }
 }
 </style>

@@ -17,112 +17,136 @@
     </div>
     
     <div class="post-content">
-      <!-- 帖子头部 -->
-      <div class="post-header">
-        <div class="author-info">
-          <el-avatar :size="32" :src="post.author.avatar">
-            {{ post.author.username.charAt(0) }}
-          </el-avatar>
-          <div class="author-details">
-            <div class="author-name">{{ post.author.username }}</div>
-            <div class="post-meta">
-              <span class="post-time">{{ formatTime(post.createdAt) }}</span>
-              <el-divider direction="vertical" />
-              <span class="post-category">
-                <el-tag :type="getCategoryType(post.category)" size="small">
-                  {{ getCategoryLabel(post.category) }}
-                </el-tag>
+      <!-- 左侧内容区域 -->
+      <div class="post-content-left">
+        <!-- 帖子头部 -->
+        <div class="post-header">
+          <div class="author-info">
+            <el-avatar :size="32" :src="post.author.avatar">
+              {{ post.author.username.charAt(0) }}
+            </el-avatar>
+            <div class="author-details">
+              <div class="author-name">{{ post.author.username }}</div>
+              <div class="post-meta">
+                <span class="post-time">{{ formatTime(post.createdAt) }}</span>
+                <el-divider direction="vertical" />
+                <span class="post-category">
+                  <el-tag :type="getCategoryType(post.category)" size="small">
+                    {{ getCategoryLabel(post.category) }}
+                  </el-tag>
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="post-actions">
+            <el-dropdown trigger="click" @command="handleActionCommand">
+              <el-button text>
+                <el-icon><MoreFilled /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="share">
+                    <el-icon><Share /></el-icon>
+                    分享
+                  </el-dropdown-item>
+                  <el-dropdown-item command="report">
+                    <el-icon><Warning /></el-icon>
+                    举报
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="isAuthor" command="edit">
+                    <el-icon><Edit /></el-icon>
+                    编辑
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="isAuthor" command="delete" divided>
+                    <el-icon><Delete /></el-icon>
+                    删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+        </div>
+        
+        <!-- 帖子标题 -->
+        <h3 class="post-title">{{ post.title }}</h3>
+        
+        <!-- 帖子内容预览 -->
+        <div class="post-preview">
+          {{ getContentPreview(post.content) }}
+        </div>
+        
+        <!-- 帖子标签 -->
+        <div v-if="post.tags && post.tags.length > 0" class="post-tags">
+          <el-tag
+            v-for="tag in post.tags.slice(0, 3)"
+            :key="tag"
+            size="small"
+            class="tag-item"
+            @click.stop="handleTagClick(tag)"
+          >
+            {{ tag }}
+          </el-tag>
+          <span v-if="post.tags.length > 3" class="more-tags">
+            +{{ post.tags.length - 3 }}
+          </span>
+        </div>
+        
+        <!-- 帖子统计和操作 -->
+        <div class="post-footer">
+          <div class="post-stats">
+            <div class="stat-item">
+              <el-icon><View /></el-icon>
+              <span>{{ formatNumber(post.views) }}</span>
+            </div>
+            
+            <div class="stat-item">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>{{ formatNumber(post.replies) }}</span>
+            </div>
+            
+            <div class="stat-item">
+              <el-icon><Timer /></el-icon>
+              <span>{{ formatTime(post.lastReplyAt) }}</span>
+            </div>
+          </div>
+          
+          <div class="post-interactions">
+            <el-button
+              text
+              :class="{ 'liked': post.liked }"
+              @click.stop="handleLike"
+            >
+              <el-icon><component :is="post.liked ? 'StarFilled' : 'Star'" /></el-icon>
+              <span>{{ formatNumber(post.likes) }}</span>
+            </el-button>
+            
+            <el-button text @click.stop="handleReply">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>回复</span>
+            </el-button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧封面图片 -->
+      <div class="post-cover-right">
+        <div class="post-cover-container">
+          <img 
+            :src="post.coverImage || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20tech%20abstract%20background%20with%20AI%20elements%20and%20digital%20patterns&image_size=portrait_4_3'"
+            :alt="post.title"
+            class="post-cover-image"
+            @error="handleImageError"
+          />
+          <div class="cover-overlay">
+            <div class="cover-info">
+              <span class="cover-category">{{ post.category }}</span>
+              <span class="cover-views">
+                <el-icon><View /></el-icon>
+                {{ formatNumber(post.views) }}
               </span>
             </div>
           </div>
-        </div>
-        
-        <div class="post-actions">
-          <el-dropdown trigger="click" @command="handleActionCommand">
-            <el-button text>
-              <el-icon><MoreFilled /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="share">
-                  <el-icon><Share /></el-icon>
-                  分享
-                </el-dropdown-item>
-                <el-dropdown-item command="report">
-                  <el-icon><Warning /></el-icon>
-                  举报
-                </el-dropdown-item>
-                <el-dropdown-item v-if="isAuthor" command="edit">
-                  <el-icon><Edit /></el-icon>
-                  编辑
-                </el-dropdown-item>
-                <el-dropdown-item v-if="isAuthor" command="delete" divided>
-                  <el-icon><Delete /></el-icon>
-                  删除
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
-      
-      <!-- 帖子标题 -->
-      <h3 class="post-title">{{ post.title }}</h3>
-      
-      <!-- 帖子内容预览 -->
-      <div class="post-preview">
-        {{ getContentPreview(post.content) }}
-      </div>
-      
-      <!-- 帖子标签 -->
-      <div v-if="post.tags && post.tags.length > 0" class="post-tags">
-        <el-tag
-          v-for="tag in post.tags.slice(0, 3)"
-          :key="tag"
-          size="small"
-          class="tag-item"
-          @click.stop="handleTagClick(tag)"
-        >
-          {{ tag }}
-        </el-tag>
-        <span v-if="post.tags.length > 3" class="more-tags">
-          +{{ post.tags.length - 3 }}
-        </span>
-      </div>
-      
-      <!-- 帖子统计和操作 -->
-      <div class="post-footer">
-        <div class="post-stats">
-          <div class="stat-item">
-            <el-icon><View /></el-icon>
-            <span>{{ formatNumber(post.views) }}</span>
-          </div>
-          
-          <div class="stat-item">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>{{ formatNumber(post.replies) }}</span>
-          </div>
-          
-          <div class="stat-item">
-            <el-icon><Timer /></el-icon>
-            <span>{{ formatTime(post.lastReplyAt) }}</span>
-          </div>
-        </div>
-        
-        <div class="post-interactions">
-          <el-button
-            text
-            :class="{ 'liked': post.liked }"
-            @click.stop="handleLike"
-          >
-            <el-icon><component :is="post.liked ? 'StarFilled' : 'Star'" /></el-icon>
-            <span>{{ formatNumber(post.likes) }}</span>
-          </el-button>
-          
-          <el-button text @click.stop="handleReply">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>回复</span>
-          </el-button>
         </div>
       </div>
     </div>
@@ -259,6 +283,11 @@ const handleTagClick = (tag) => {
   ElMessage.info(`搜索标签: ${tag}`)
 }
 
+const handleImageError = (event) => {
+  // 图片加载失败时使用默认图片
+  event.target.src = 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=abstract%20geometric%20pattern%20with%20soft%20colors&image_size=portrait_4_3'
+}
+
 const handleActionCommand = (command) => {
   switch (command) {
     case 'share':
@@ -317,7 +346,7 @@ const handleActionCommand = (command) => {
 .featured-badge {
   position: absolute;
   top: 12px;
-  right: 12px;
+  right: 190px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -325,6 +354,16 @@ const handleActionCommand = (command) => {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .pinned-badge,
+  .featured-badge {
+    right: 12px;
+    top: 8px;
+  }
 }
 
 .pinned-badge {
@@ -339,6 +378,84 @@ const handleActionCommand = (command) => {
 
 .post-content {
   width: 100%;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.post-content-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-cover-right {
+  flex-shrink: 0;
+  width: 160px;
+  position: relative;
+  z-index: 1;
+}
+
+.post-cover-container {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.post-cover-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.post-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.post-cover-container:hover .post-cover-image {
+  transform: scale(1.05);
+}
+
+.cover-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  padding: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.post-cover-container:hover .cover-overlay {
+  opacity: 1;
+}
+
+.cover-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: white;
+}
+
+.cover-category {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.cover-views {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .post-header {
@@ -472,6 +589,21 @@ const handleActionCommand = (command) => {
     padding: 16px;
   }
   
+  .post-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .post-cover-right {
+    width: 100%;
+    order: -1;
+    position: relative;
+  }
+  
+  .post-cover-container {
+    height: 200px;
+  }
+  
   .post-header {
     flex-direction: column;
     gap: 8px;
@@ -496,6 +628,14 @@ const handleActionCommand = (command) => {
 @media (max-width: 480px) {
   .post-item {
     padding: 12px;
+  }
+  
+  .post-content {
+    gap: 12px;
+  }
+  
+  .post-cover-container {
+    height: 160px;
   }
   
   .author-info {
