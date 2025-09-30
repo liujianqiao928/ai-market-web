@@ -222,21 +222,70 @@
         <div class="form-section">
           <div class="section-header">
             <span class="section-title">文章标签</span>
-            <el-button type="primary" link @click="addCustomTag">
-              <el-icon><Plus /></el-icon>
-              添加文章标签
+            <span class="tag-count-hint">{{ postForm.tags.length }}/5</span>
+          </div>
+          
+          <!-- 标签输入框 -->
+          <div class="tag-input-container">
+            <el-input
+              v-model="tagInput"
+              placeholder="输入标签名称或 # 标签名称 创建自定义标签"
+              @keyup.enter="handleTagInput"
+              @input="handleTagSearch"
+              class="tag-input"
+              clearable
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <el-button 
+              type="primary" 
+              @click="handleTagInput"
+              :disabled="postForm.tags.length >= 5"
+              class="add-tag-btn"
+            >
+              添加
             </el-button>
           </div>
-          <div class="tags-container">
-            <el-tag
-              v-for="tag in postForm.tags"
-              :key="tag"
-              closable
-              @close="removeTag(tag)"
-              class="article-tag"
-            >
-              {{ tag }}
-            </el-tag>
+
+          <!-- 已选择的标签 -->
+          <div class="selected-tags" v-if="postForm.tags.length > 0">
+            <div class="tags-label">已选择的标签：</div>
+            <div class="tags-list">
+              <el-tag
+                v-for="tag in postForm.tags"
+                :key="tag"
+                closable
+                @close="removeTag(tag)"
+                class="selected-tag"
+                type="primary"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- 预设标签推荐 -->
+          <div class="preset-tags">
+            <div class="tags-label">推荐标签：</div>
+            <div class="tags-grid">
+              <el-tag
+                v-for="tag in filteredPresetTags"
+                :key="tag"
+                @click="selectPresetTag(tag)"
+                :class="['preset-tag', { 'selected': postForm.tags.includes(tag), 'disabled': postForm.tags.length >= 5 && !postForm.tags.includes(tag) }]"
+                :type="postForm.tags.includes(tag) ? 'success' : ''"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- 标签数量限制提示 -->
+          <div class="tag-limit-hint" v-if="postForm.tags.length >= 5">
+            <el-icon class="warning-icon"><Warning /></el-icon>
+            已达到标签数量上限（5个）
           </div>
         </div>
 
@@ -651,7 +700,9 @@ import {
   User,
   Share,
   Loading,
-  DocumentCopy
+  DocumentCopy,
+  Search,
+  Warning
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -767,6 +818,20 @@ const popularTags = ref([
   'Vue.js', 'React', 'Node.js', 'TensorFlow', 'PyTorch', '自然语言处理',
   '计算机视觉', '数据科学', '算法', '开源项目'
 ])
+
+// 标签相关变量
+const tagInput = ref('')
+const tagSearchKeyword = ref('')
+
+// 过滤后的预设标签
+const filteredPresetTags = computed(() => {
+  if (!tagSearchKeyword.value) {
+    return popularTags.value
+  }
+  return popularTags.value.filter(tag => 
+    tag.toLowerCase().includes(tagSearchKeyword.value.toLowerCase())
+  )
+})
 
 const formRules = {
   title: [
@@ -1547,6 +1612,62 @@ const removeTag = (tag) => {
   if (index > -1) {
     postForm.value.tags.splice(index, 1)
   }
+}
+
+// 新的标签处理函数
+const handleTagInput = () => {
+  const input = tagInput.value.trim()
+  if (!input) return
+
+  let tagName = input
+  
+  // 检查是否是自定义标签格式 (# 标签名称)
+  if (input.startsWith('#')) {
+    tagName = input.substring(1).trim()
+    if (!tagName) {
+      ElMessage.warning('请输入标签名称')
+      return
+    }
+  }
+
+  // 检查标签数量限制
+  if (postForm.value.tags.length >= 5) {
+    ElMessage.warning('最多只能添加5个标签')
+    return
+  }
+
+  // 检查标签是否已存在
+  if (postForm.value.tags.includes(tagName)) {
+    ElMessage.warning('标签已存在')
+    return
+  }
+
+  // 添加标签
+  postForm.value.tags.push(tagName)
+  tagInput.value = ''
+  ElMessage.success('标签添加成功！')
+}
+
+const handleTagSearch = (value) => {
+  tagSearchKeyword.value = value
+}
+
+const selectPresetTag = (tag) => {
+  // 检查标签数量限制
+  if (postForm.value.tags.length >= 5 && !postForm.value.tags.includes(tag)) {
+    ElMessage.warning('最多只能添加5个标签')
+    return
+  }
+
+  // 如果标签已选择，则取消选择
+  if (postForm.value.tags.includes(tag)) {
+    removeTag(tag)
+    return
+  }
+
+  // 添加标签
+  postForm.value.tags.push(tag)
+  ElMessage.success('标签添加成功！')
 }
 
 const handleCoverUpload = () => {
@@ -3595,6 +3716,144 @@ loadDraft()
   
   .code-editor .cm-content {
     min-height: 600px;
+  }
+}
+
+/* 标签相关样式 */
+.tag-count-hint {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.tag-input-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.tag-input {
+  flex: 1;
+}
+
+.add-tag-btn {
+  min-width: 80px;
+}
+
+.selected-tags {
+  margin-bottom: 20px;
+}
+
+.tags-label {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected-tag {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.selected-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.preset-tags {
+  margin-bottom: 16px;
+}
+
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-tag {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.preset-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.preset-tag.selected {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #10b981;
+  color: white;
+}
+
+.preset-tag.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.tag-limit-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.warning-icon {
+  color: #f59e0b;
+  font-size: 16px;
+}
+
+/* 标签响应式设计 */
+@media (max-width: 768px) {
+  .tag-input-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .add-tag-btn {
+    width: 100%;
+  }
+  
+  .tags-grid {
+    gap: 6px;
+  }
+  
+  .preset-tag,
+  .selected-tag {
+    font-size: 12px;
+    padding: 4px 8px;
   }
 }
 </style>

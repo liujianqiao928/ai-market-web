@@ -1,12 +1,23 @@
 <template>
   <div class="profile-page">
     <div class="profile-header">
-      <div class="header-background"></div>
+      <div class="header-background">
+        <div class="gradient-overlay"></div>
+        <div class="floating-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+      </div>
       <div class="header-content">
         <div class="avatar-section">
-          <el-avatar :size="120" :src="userInfo.avatar" class="user-avatar">
-            <el-icon><User /></el-icon>
-          </el-avatar>
+          <div class="avatar-container">
+            <el-avatar :size="120" :src="userInfo.avatar" class="user-avatar">
+              <el-icon><User /></el-icon>
+            </el-avatar>
+            <div class="avatar-ring"></div>
+            <div class="avatar-glow"></div>
+          </div>
           <el-button v-if="isOwnProfile" size="small" class="edit-avatar-btn" @click="handleAvatarEdit">
             <el-icon><Camera /></el-icon>
           </el-button>
@@ -15,34 +26,26 @@
           <h1 class="username">{{ userInfo.username }}</h1>
           <p class="user-title">{{ userInfo.title || '暂无简介' }}</p>
           <div class="user-stats">
-            <div class="stat-item">
-              <span class="stat-number">{{ userInfo.postsCount || 0 }}</span>
-              <span class="stat-label">帖子</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userInfo.followersCount || 0 }}</span>
-              <span class="stat-label">粉丝</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userInfo.followingCount || 0 }}</span>
-              <span class="stat-label">关注</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userInfo.likesCount || 0 }}</span>
-              <span class="stat-label">获赞</span>
+            <div class="stat-item" v-for="(stat, index) in userStats" :key="index">
+              <div class="stat-icon">
+                <el-icon><component :is="stat.icon" /></el-icon>
+              </div>
+              <span class="stat-number">{{ stat.value }}</span>
+              <span class="stat-label">{{ stat.label }}</span>
             </div>
           </div>
           <div class="user-actions" v-if="!isOwnProfile">
-            <el-button type="primary" @click="handleFollow">
+            <el-button type="primary" class="action-btn primary-btn" @click="handleFollow">
+              <el-icon><component :is="isFollowing ? 'UserFilled' : 'User'" /></el-icon>
               {{ isFollowing ? '取消关注' : '关注' }}
             </el-button>
-            <el-button @click="handleMessage">
+            <el-button class="action-btn secondary-btn" @click="handleMessage">
               <el-icon><Message /></el-icon>
               私信
             </el-button>
           </div>
           <div class="user-actions" v-else>
-            <el-button @click="handleEditProfile">
+            <el-button class="action-btn primary-btn" @click="handleEditProfile">
               <el-icon><Edit /></el-icon>
               编辑资料
             </el-button>
@@ -57,7 +60,11 @@
           <el-tab-pane label="动态" name="posts">
             <div class="posts-section">
               <div v-if="posts.length === 0" class="empty-state">
-                <el-empty description="暂无动态" />
+                <div class="empty-icon">
+                  <el-icon><Document /></el-icon>
+                </div>
+                <h3>暂无动态</h3>
+                <p>还没有发布任何内容</p>
               </div>
               <div v-else class="posts-grid">
                 <div
@@ -86,6 +93,7 @@
                       {{ post.likes }}
                     </span>
                   </div>
+                  <div class="card-glow"></div>
                 </div>
               </div>
             </div>
@@ -94,7 +102,11 @@
           <el-tab-pane label="收藏" name="favorites">
             <div class="favorites-section">
               <div v-if="favorites.length === 0" class="empty-state">
-                <el-empty description="暂无收藏" />
+                <div class="empty-icon">
+                  <el-icon><Star /></el-icon>
+                </div>
+                <h3>暂无收藏</h3>
+                <p>还没有收藏任何内容</p>
               </div>
               <div v-else class="favorites-grid">
                 <div
@@ -103,10 +115,16 @@
                   class="favorite-card"
                   @click="handleFavoriteClick(item)"
                 >
-                  <div class="favorite-type">{{ item.type }}</div>
+                  <div class="favorite-header">
+                    <div class="favorite-type">{{ item.type }}</div>
+                    <div class="favorite-icon">
+                      <el-icon><Star /></el-icon>
+                    </div>
+                  </div>
                   <h3 class="favorite-title">{{ item.title }}</h3>
                   <p class="favorite-description">{{ item.description }}</p>
                   <div class="favorite-date">{{ formatDate(item.createdAt) }}</div>
+                  <div class="card-glow"></div>
                 </div>
               </div>
             </div>
@@ -115,39 +133,75 @@
           <el-tab-pane label="关于" name="about">
             <div class="about-section">
               <div class="info-card">
-                <h3>个人信息</h3>
+                <div class="card-header">
+                  <h3>个人信息</h3>
+                  <div class="header-icon">
+                    <el-icon><User /></el-icon>
+                  </div>
+                </div>
                 <div class="info-grid">
                   <div class="info-item">
-                    <label>用户名</label>
-                    <span>{{ userInfo.username }}</span>
+                    <div class="info-icon">
+                      <el-icon><User /></el-icon>
+                    </div>
+                    <div class="info-content">
+                      <label>用户名</label>
+                      <span>{{ userInfo.username }}</span>
+                    </div>
                   </div>
                   <div class="info-item">
-                    <label>邮箱</label>
-                    <span>{{ userInfo.email || '未设置' }}</span>
+                    <div class="info-icon">
+                      <el-icon><Message /></el-icon>
+                    </div>
+                    <div class="info-content">
+                      <label>邮箱</label>
+                      <span>{{ userInfo.email || '未设置' }}</span>
+                    </div>
                   </div>
                   <div class="info-item">
-                    <label>注册时间</label>
-                    <span>{{ formatDate(userInfo.createdAt) }}</span>
+                    <div class="info-icon">
+                      <el-icon><Calendar /></el-icon>
+                    </div>
+                    <div class="info-content">
+                      <label>注册时间</label>
+                      <span>{{ formatDate(userInfo.createdAt) }}</span>
+                    </div>
                   </div>
                   <div class="info-item">
-                    <label>最后活跃</label>
-                    <span>{{ formatDate(userInfo.lastActiveAt) }}</span>
+                    <div class="info-icon">
+                      <el-icon><Clock /></el-icon>
+                    </div>
+                    <div class="info-content">
+                      <label>最后活跃</label>
+                      <span>{{ formatDate(userInfo.lastActiveAt) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
               
               <div class="info-card" v-if="userInfo.bio">
-                <h3>个人简介</h3>
+                <div class="card-header">
+                  <h3>个人简介</h3>
+                  <div class="header-icon">
+                    <el-icon><Document /></el-icon>
+                  </div>
+                </div>
                 <p class="bio-content">{{ userInfo.bio }}</p>
               </div>
               
               <div class="info-card" v-if="userInfo.skills && userInfo.skills.length > 0">
-                <h3>技能标签</h3>
+                <div class="card-header">
+                  <h3>技能标签</h3>
+                  <div class="header-icon">
+                    <el-icon><Trophy /></el-icon>
+                  </div>
+                </div>
                 <div class="skills-tags">
                   <el-tag
                     v-for="skill in userInfo.skills"
                     :key="skill"
                     class="skill-tag"
+                    effect="light"
                   >
                     {{ skill }}
                   </el-tag>
@@ -165,6 +219,7 @@
       title="编辑资料"
       width="600px"
       :before-close="handleEditCancel"
+      class="edit-dialog"
     >
       <el-form
         ref="editFormRef"
@@ -224,7 +279,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import {
-  User, Camera, Message, Edit, View, ChatDotRound, Star
+  User, Camera, Message, Edit, View, ChatDotRound, Star, Document, Calendar, Clock, Trophy, UserFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -279,6 +334,13 @@ const editRules = {
 const isOwnProfile = computed(() => {
   return !route.params.id || route.params.id === userStore.user?.id
 })
+
+const userStats = computed(() => [
+  { icon: 'Document', value: userInfo.value.postsCount || 0, label: '帖子' },
+  { icon: 'User', value: userInfo.value.followersCount || 0, label: '粉丝' },
+  { icon: 'UserFilled', value: userInfo.value.followingCount || 0, label: '关注' },
+  { icon: 'Star', value: userInfo.value.likesCount || 0, label: '获赞' }
+])
 
 const formatDate = (dateString) => {
   if (!dateString) return '未知'
@@ -442,29 +504,122 @@ onMounted(() => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.profile-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .profile-header {
   position: relative;
-  background: white;
-  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 20px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .header-background {
   height: 200px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, 
+    rgba(102, 126, 234, 0.8) 0%, 
+    rgba(118, 75, 162, 0.8) 50%,
+    rgba(240, 147, 251, 0.8) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+.floating-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 80px;
+  height: 80px;
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  width: 60px;
+  height: 60px;
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.shape-3 {
+  width: 100px;
+  height: 100px;
+  top: 40%;
+  left: 70%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
 }
 
 .header-content {
   position: relative;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
   display: flex;
   align-items: flex-end;
-  gap: 24px;
+  gap: 32px;
   transform: translateY(-60px);
+  z-index: 2;
 }
 
 .avatar-section {
@@ -472,9 +627,62 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
 .user-avatar {
-  border: 4px solid white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 3;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+.avatar-ring {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+  background-clip: border-box;
+  animation: rotate 3s linear infinite;
+  z-index: 1;
+}
+
+.avatar-glow {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.3) 0%, transparent 70%);
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 .edit-avatar-btn {
@@ -482,123 +690,269 @@ onMounted(() => {
   bottom: 8px;
   right: 8px;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  background: white;
-  border: 2px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  z-index: 4;
+}
+
+.edit-avatar-btn:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 1);
 }
 
 .user-info {
   flex: 1;
-  padding-bottom: 24px;
+  padding-bottom: 32px;
+  color: white;
 }
 
 .username {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1f2937;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .user-title {
   font-size: 18px;
-  color: #6b7280;
-  margin: 0 0 16px 0;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 24px 0;
+  font-weight: 300;
 }
 
 .user-stats {
   display: flex;
-  gap: 32px;
-  margin-bottom: 20px;
+  gap: 40px;
+  margin-bottom: 24px;
 }
 
 .stat-item {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.stat-item:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .stat-number {
-  display: block;
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
 .user-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  backdrop-filter: blur(10px);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .profile-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
+  position: relative;
+  z-index: 1;
 }
 
 .content-tabs {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .profile-tabs :deep(.el-tabs__header) {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.profile-tabs :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+.profile-tabs :deep(.el-tabs__item) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 0 24px;
+  margin-right: 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.profile-tabs :deep(.el-tabs__item:hover) {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.profile-tabs :deep(.el-tabs__item.is-active) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.profile-tabs :deep(.el-tabs__active-bar) {
+  display: none;
 }
 
 .empty-state {
-  padding: 40px;
+  padding: 60px 40px;
   text-align: center;
+  color: #6b7280;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #374151;
+}
+
+.empty-state p {
+  font-size: 14px;
+  margin: 0;
+  color: #9ca3af;
 }
 
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
 }
 
 .post-card {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.post-card:hover .card-glow {
+  opacity: 1;
+}
+
+.card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .post-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .post-category {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .post-date {
   font-size: 12px;
-  color: #6b7280;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .post-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   margin: 0 0 8px 0;
   color: #1f2937;
   line-height: 1.4;
@@ -607,8 +961,8 @@ onMounted(() => {
 .post-excerpt {
   font-size: 14px;
   color: #6b7280;
-  line-height: 1.5;
-  margin: 0 0 12px 0;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -617,64 +971,85 @@ onMounted(() => {
 
 .post-stats {
   display: flex;
-  gap: 16px;
+  gap: 20px;
 }
 
 .stat {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #6b7280;
+  gap: 6px;
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .favorites-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 .favorite-card {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .favorite-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.favorite-card:hover .card-glow {
+  opacity: 1;
+}
+
+.favorite-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .favorite-type {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 11px;
-  display: inline-block;
-  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.favorite-icon {
+  color: #fbbf24;
+  font-size: 16px;
 }
 
 .favorite-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   color: #1f2937;
 }
 
 .favorite-description {
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
 }
 
 .favorite-date {
   font-size: 11px;
   color: #9ca3af;
+  font-weight: 500;
 }
 
 .about-section {
@@ -684,63 +1059,129 @@ onMounted(() => {
 }
 
 .info-card {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
 }
 
-.info-card h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
+.info-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
   color: #1f2937;
+}
+
+.header-icon {
+  color: #667eea;
+  font-size: 20px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
 
 .info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.info-item:hover {
+  background: rgba(241, 245, 249, 0.9);
+  transform: translateX(4px);
+}
+
+.info-icon {
+  color: #667eea;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.info-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.info-item label {
+.info-content label {
   font-size: 12px;
   color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-content span {
+  font-size: 14px;
+  color: #1f2937;
   font-weight: 500;
 }
 
-.info-item span {
-  font-size: 14px;
-  color: #1f2937;
-}
-
 .bio-content {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
   color: #374151;
   margin: 0;
+  padding: 20px;
+  background: rgba(248, 250, 252, 0.6);
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
 }
 
 .skills-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 
 .skill-tag {
-  background: #eff6ff;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.skill-tag:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .skills-select {
   width: 100%;
+}
+
+.edit-dialog :deep(.el-dialog) {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .dialog-footer {
@@ -750,15 +1191,31 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .profile-page {
+    margin: 0;
+  }
+  
+  .profile-header {
+    margin: 10px;
+    border-radius: 16px;
+  }
+  
   .header-content {
     flex-direction: column;
     align-items: center;
     text-align: center;
     transform: translateY(-40px);
+    padding: 0 20px;
   }
   
   .user-stats {
     justify-content: center;
+    gap: 20px;
+  }
+  
+  .stat-item {
+    min-width: 60px;
+    padding: 12px;
   }
   
   .posts-grid,
@@ -771,7 +1228,39 @@ onMounted(() => {
   }
   
   .profile-content {
-    padding: 0 16px;
+    padding: 0 20px;
+  }
+  
+  .content-tabs {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .username {
+    font-size: 28px;
+  }
+  
+  .user-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-stats {
+    gap: 12px;
+  }
+  
+  .stat-item {
+    min-width: 50px;
+    padding: 8px;
+  }
+  
+  .stat-number {
+    font-size: 18px;
+  }
+  
+  .stat-label {
+    font-size: 10px;
   }
 }
 </style>
