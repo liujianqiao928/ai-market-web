@@ -163,7 +163,7 @@
               </el-avatar>
               <div class="user-info">
                 <div class="username">{{ user.username }}</div>
-                <div class="user-stats">{{ user.posts }}帖 · {{ user.replies }}回复</div>
+                <div class="user-stats">{{ user.posts }}帖 · {{ user.replies }}粉丝</div>
               </div>
             </div>
           </div>

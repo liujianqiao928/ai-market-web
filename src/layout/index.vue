@@ -10,6 +10,9 @@
       <router-view />
     </el-main>
     
+    <!-- 小A助手 -->
+    <AIAssistant />
+    
     <!-- 底部 -->
     <el-footer class="layout-footer">
       <div class="footer-background">
@@ -83,6 +86,7 @@
 
 <script setup>
 import Navbar from '@/components/Navbar.vue'
+import AIAssistant from '@/components/AIAssistant.vue'
 </script>
 
 <style scoped>
